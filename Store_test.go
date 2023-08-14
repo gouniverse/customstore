@@ -25,7 +25,11 @@ func InitDB(filepath string) *sql.DB {
 func TestStoreCreate(t *testing.T) {
 	db := InitDB("test_data_store_create.db")
 
-	store, err := NewStore(WithDb(db), WithTableName("data_create"), WithAutoMigrate(true))
+	store, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		TableName:          "data_create",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -49,7 +53,11 @@ func TestStoreCreate(t *testing.T) {
 func TestRecordCreate(t *testing.T) {
 	db := InitDB("test_data_store_record_create.db")
 
-	store, err := NewStore(WithDb(db), WithTableName("data_record_create"), WithAutoMigrate(true))
+	store, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		TableName:          "data_record_create",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
@@ -80,7 +88,11 @@ func TestRecordCreate(t *testing.T) {
 func TestRecordFindByID(t *testing.T) {
 	db := InitDB("test_data_store_record_find.db")
 
-	store, err := NewStore(WithDb(db), WithTableName("data_record_find"), WithDebug(false), WithAutoMigrate(true))
+	store, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		TableName:          "data_record_find",
+		AutomigrateEnabled: true,
+	})
 
 	if err != nil {
 		t.Fatalf("Store could not be created: " + err.Error())
