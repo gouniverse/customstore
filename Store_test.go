@@ -70,14 +70,10 @@ func TestRecordCreate(t *testing.T) {
 	record := Record{
 		Type: "person",
 	}
-	isOk, err := store.RecordCreate(&record)
+	err = store.RecordCreate(&record)
 
 	if err != nil {
 		t.Fatalf("Record could not be created: " + err.Error())
-	}
-
-	if isOk == false {
-		t.Fatalf("Record could not be created")
 	}
 
 	if len(record.ID) != 32 {
@@ -108,14 +104,10 @@ func TestRecordFindByID(t *testing.T) {
 	record.SetMap(map[string]interface{}{
 		"name": "Jon",
 	})
-	isOk, err := store.RecordCreate(&record)
+	err = store.RecordCreate(&record)
 
 	if err != nil {
 		t.Fatalf("Record could not be created: " + err.Error())
-	}
-
-	if isOk == false {
-		t.Fatalf("Record could not be created")
 	}
 
 	if len(record.ID) != 32 {

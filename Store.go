@@ -103,8 +103,8 @@ func (st *Store) EnableDebug(debug bool) {
 	st.debug = debug
 }
 
-// RecordCreate creates a node
-func (st *Store) RecordCreate(record *Record) (bool, error) {
+// RecordCreate creates a record
+func (st *Store) RecordCreate(record *Record) error {
 	if record.ID == "" {
 		record.ID = uid.HumanUid()
 	}
@@ -115,7 +115,7 @@ func (st *Store) RecordCreate(record *Record) (bool, error) {
 	sqlStr, _, errSQL := goqu.Dialect(st.dbDriverName).Insert(st.tableName).Rows(record).ToSQL()
 
 	if errSQL != nil {
-		return false, errSQL
+		return errSQL
 	}
 
 	if st.debug {
@@ -125,13 +125,13 @@ func (st *Store) RecordCreate(record *Record) (bool, error) {
 	_, err := st.db.Exec(sqlStr)
 
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return true, nil
+	return nil
 }
 
-// RecordFindByID finds a user by ID
+// RecordFindByID finds a record by ID
 func (st *Store) RecordFindByID(id string) (*Record, error) {
 	sqlStr, _, _ := goqu.Dialect(st.dbDriverName).
 		From(st.tableName).
