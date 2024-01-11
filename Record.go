@@ -16,13 +16,15 @@ type Record struct {
 	DeletedAt *time.Time `json:"deleted_at" db:"deleted_at"`   // datetime DEFAULT NULL
 }
 
-func (r *Record) SetMap(metas map[string]interface{}) {
+func (record *Record) SetMap(metas map[string]interface{}) *Record {
 	jsonBytes, err := json.Marshal(metas)
 	if err != nil {
 		log.Panic(err.Error())
 	}
 	jsonString := string(jsonBytes)
-	r.Data = jsonString
+	record.Data = jsonString
+
+	return record
 }
 
 func (r *Record) GetMap() map[string]interface{} {
