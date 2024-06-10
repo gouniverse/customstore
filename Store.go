@@ -161,3 +161,34 @@ func (st *Store) RecordFindByID(id string) (*Record, error) {
 
 	return &record, nil
 }
+
+// RecordUpdate updates a record
+func (st *Store) RecordUpdate(record *Record) error {
+	fields := map[string]interface{}{}
+	fields["record_data"] = record.Data
+	fields["updated_at"] = time.Now()
+
+	var sqlStr string
+
+	sqlStr, _, errSQL := goqu.Dialect(st.dbDriverName).
+		Update(st.tableName).
+		Set(fields).
+		Where(goqu.C("id").Eq(record.ID)).
+		ToSQL()
+
+	if errSQL != nil {
+		return errSQL
+	}
+
+	if st.debug {
+		log.Println(sqlStr)
+	}
+
+	_, err := st.db.Exec(sqlStr)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

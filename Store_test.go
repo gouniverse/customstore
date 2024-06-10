@@ -126,3 +126,73 @@ func TestRecordFindByID(t *testing.T) {
 
 	// log.Println(retrievedRecord.GetMap())
 }
+
+func TestRecordUpdate(t *testing.T) {
+	db := InitDB("test_data_store_record_update.db")
+
+	store, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		TableName:          "data_record_update",
+		AutomigrateEnabled: true,
+	})
+
+	if err != nil {
+		t.Fatalf("Store could not be created: " + err.Error())
+	}
+
+	if store == nil {
+		t.Fatalf("Store could not be created")
+	}
+
+	record := NewRecord(`person`).SetMap(map[string]any{
+		`first_name`: `John`,
+		`last_name`:  `Doe`,
+	})
+
+	err = store.RecordCreate(record)
+
+	if err != nil {
+		t.Fatalf("Record could not be created: " + err.Error())
+	}
+
+	retrievedRecord, errFind := store.RecordFindByID(record.ID)
+
+	if errFind != nil {
+		t.Fatalf("Record could not be found: " + errFind.Error())
+	}
+
+	if retrievedRecord == nil {
+		t.Fatalf("Record must not be NIL")
+	}
+
+	if retrievedRecord.Data != `{"first_name":"John","last_name":"Doe"}` {
+		t.Fatal("Record data must be", record.Data, " found: ", retrievedRecord.Data)
+	}
+
+	retrievedRecord.SetMap(map[string]any{
+		`first_name`: `Jane`,
+		`last_name`:  `Smith`,
+		`country`:    `GB`,
+	})
+
+	err = store.RecordUpdate(retrievedRecord)
+
+	if err != nil {
+		t.Fatalf("Record could not be updated: " + err.Error())
+	}
+
+	retrievedRecord2, errFind := store.RecordFindByID(record.ID)
+
+	if errFind != nil {
+		t.Fatalf("Record could not be found: " + errFind.Error())
+	}
+
+	if retrievedRecord2 == nil {
+		t.Fatalf("Record must not be NIL")
+	}
+
+	if retrievedRecord2.Data != `{"country":"GB","first_name":"Jane","last_name":"Smith"}` {
+		t.Fatal("Record data must be", retrievedRecord.Data, " found: ", retrievedRecord2.Data)
+	}
+
+}
