@@ -5,12 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"log"
-	"reflect"
-	"strings"
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/georgysavva/scany/sqlscan"
+	"github.com/gouniverse/sb"
 	"github.com/gouniverse/uid"
 )
 
@@ -52,7 +51,7 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 	}
 
 	if store.dbDriverName == "" {
-		store.dbDriverName = store.DriverName(store.db)
+		store.dbDriverName = sb.DatabaseDriverName(store.db)
 	}
 
 	if store.automigrateEnabled {
@@ -60,25 +59,6 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 	}
 
 	return store, nil
-}
-
-// DriverName finds the driver name from database
-func (st *Store) DriverName(db *sql.DB) string {
-	dv := reflect.ValueOf(db.Driver())
-	driverFullName := dv.Type().String()
-	if strings.Contains(driverFullName, "mysql") {
-		return "mysql"
-	}
-	if strings.Contains(driverFullName, "postgres") || strings.Contains(driverFullName, "pq") {
-		return "postgres"
-	}
-	if strings.Contains(driverFullName, "sqlite") {
-		return "sqlite"
-	}
-	if strings.Contains(driverFullName, "mssql") {
-		return "mssql"
-	}
-	return driverFullName
 }
 
 // AutoMigrate migrates the tables
@@ -91,7 +71,6 @@ func (st *Store) AutoMigrate() error {
 
 	_, err := st.db.Exec(sql)
 	if err != nil {
-		// log.Println(err)
 		return err
 	}
 
@@ -112,7 +91,11 @@ func (st *Store) RecordCreate(record *Record) error {
 	record.UpdatedAt = time.Now()
 
 	var sqlStr string
-	sqlStr, _, errSQL := goqu.Dialect(st.dbDriverName).Insert(st.tableName).Rows(record).ToSQL()
+	sqlStr, sqlParams, errSQL := goqu.Dialect(st.dbDriverName).
+		Insert(st.tableName).
+		Rows(record).
+		Prepared(true).
+		ToSQL()
 
 	if errSQL != nil {
 		return errSQL
@@ -122,7 +105,7 @@ func (st *Store) RecordCreate(record *Record) error {
 		log.Println(sqlStr)
 	}
 
-	_, err := st.db.Exec(sqlStr)
+	_, err := st.db.Exec(sqlStr, sqlParams...)
 
 	if err != nil {
 		return err
@@ -133,9 +116,10 @@ func (st *Store) RecordCreate(record *Record) error {
 
 // RecordFindByID finds a record by ID
 func (st *Store) RecordFindByID(id string) (*Record, error) {
-	sqlStr, _, _ := goqu.Dialect(st.dbDriverName).
+	sqlStr, sqlParams, _ := goqu.Dialect(st.dbDriverName).
 		From(st.tableName).
-		Where(goqu.C("id").Eq(id), goqu.C("deleted_at").IsNull()).
+		Prepared(true).
+		Where(goqu.C(COLUMN_ID).Eq(id), goqu.C(COLUMN_DELETED_AT).IsNull()).
 		Limit(1).
 		Select().
 		ToSQL()
@@ -145,7 +129,7 @@ func (st *Store) RecordFindByID(id string) (*Record, error) {
 	}
 
 	var record Record
-	err := sqlscan.Get(context.Background(), st.db, &record, sqlStr)
+	err := sqlscan.Get(context.Background(), st.db, &record, sqlStr, sqlParams...)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -165,15 +149,16 @@ func (st *Store) RecordFindByID(id string) (*Record, error) {
 // RecordUpdate updates a record
 func (st *Store) RecordUpdate(record *Record) error {
 	fields := map[string]interface{}{}
-	fields["record_data"] = record.Data
-	fields["updated_at"] = time.Now()
+	fields[COLUMN_RECORD_DATA] = record.Data
+	fields[COLUMN_UPDATED_AT] = time.Now()
 
 	var sqlStr string
 
-	sqlStr, _, errSQL := goqu.Dialect(st.dbDriverName).
+	sqlStr, sqlParams, errSQL := goqu.Dialect(st.dbDriverName).
 		Update(st.tableName).
 		Set(fields).
 		Where(goqu.C("id").Eq(record.ID)).
+		Prepared(true).
 		ToSQL()
 
 	if errSQL != nil {
@@ -184,7 +169,7 @@ func (st *Store) RecordUpdate(record *Record) error {
 		log.Println(sqlStr)
 	}
 
-	_, err := st.db.Exec(sqlStr)
+	_, err := st.db.Exec(sqlStr, sqlParams...)
 
 	if err != nil {
 		return err
