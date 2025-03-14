@@ -3,7 +3,7 @@ package customstore
 import "github.com/gouniverse/sb"
 
 // SqlCreateUserTable returns a SQL string for creating the user table
-func (store *Store) SqlCreateTable() string {
+func (store *storeImplementation) SqlCreateTable() string {
 	sql := sb.NewBuilder(sb.DatabaseDriverName(store.db)).
 		Table(store.tableName).
 		Column(sb.Column{

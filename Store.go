@@ -14,7 +14,7 @@ import (
 )
 
 // Store defines a session store
-type Store struct {
+type storeImplementation struct {
 	tableName          string
 	db                 *sql.DB
 	dbDriverName       string
@@ -33,8 +33,8 @@ type NewStoreOptions struct {
 }
 
 // NewStore creates a new session store
-func NewStore(opts NewStoreOptions) (*Store, error) {
-	store := &Store{
+func NewStore(opts NewStoreOptions) (StoreInterface, error) {
+	store := &storeImplementation{
 		tableName:          opts.TableName,
 		automigrateEnabled: opts.AutomigrateEnabled,
 		db:                 opts.DB,
@@ -62,7 +62,7 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 }
 
 // AutoMigrate migrates the tables
-func (st *Store) AutoMigrate() error {
+func (st *storeImplementation) AutoMigrate() error {
 	sql := st.SqlCreateTable()
 
 	if st.debug {
@@ -78,12 +78,12 @@ func (st *Store) AutoMigrate() error {
 }
 
 // EnableDebug - enables the debug option
-func (st *Store) EnableDebug(debug bool) {
+func (st *storeImplementation) EnableDebug(debug bool) {
 	st.debug = debug
 }
 
 // RecordCreate creates a record
-func (st *Store) RecordCreate(record *Record) error {
+func (st *storeImplementation) RecordCreate(record *Record) error {
 	if record.ID == "" {
 		record.ID = uid.HumanUid()
 	}
@@ -115,7 +115,7 @@ func (st *Store) RecordCreate(record *Record) error {
 }
 
 // RecordFindByID finds a record by ID
-func (st *Store) RecordFindByID(id string) (*Record, error) {
+func (st *storeImplementation) RecordFindByID(id string) (*Record, error) {
 	sqlStr, sqlParams, _ := goqu.Dialect(st.dbDriverName).
 		From(st.tableName).
 		Prepared(true).
@@ -147,7 +147,7 @@ func (st *Store) RecordFindByID(id string) (*Record, error) {
 }
 
 // RecordUpdate updates a record
-func (st *Store) RecordUpdate(record *Record) error {
+func (st *storeImplementation) RecordUpdate(record *Record) error {
 	fields := map[string]interface{}{}
 	fields[COLUMN_RECORD_DATA] = record.Data
 	fields[COLUMN_UPDATED_AT] = time.Now()
