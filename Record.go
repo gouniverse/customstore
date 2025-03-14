@@ -6,6 +6,14 @@ import (
 	"time"
 )
 
+func NewRecord(recordType string) *Record {
+	record := Record{
+		Type: recordType,
+	}
+
+	return &record
+}
+
 // Record type
 type Record struct {
 	ID        string     `json:"id" db:"id"`                   // varchar(40) primary_key
