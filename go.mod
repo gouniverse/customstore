@@ -7,7 +7,7 @@ require (
 	github.com/georgysavva/scany v1.2.3
 	github.com/gouniverse/sb v0.8.0
 	github.com/gouniverse/uid v1.5.0
-	github.com/mattn/go-sqlite3 v1.14.24
+	github.com/mattn/go-sqlite3 v1.14.25
 )
 
 require (
