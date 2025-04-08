@@ -405,10 +405,18 @@ func (store *storeImplementation) RecordSoftDelete(record RecordInterface) error
 
 // RecordSoftDeleteByID soft deletes a record by ID
 func (store *storeImplementation) RecordSoftDeleteByID(id string) error {
+	if id == "" {
+		return errors.New("record id is empty")
+	}
+
 	record, err := store.RecordFindByID(id)
 
 	if err != nil {
 		return err
+	}
+
+	if record == nil {
+		return nil // Record does not exist, or is already soft deleted
 	}
 
 	return store.RecordSoftDelete(record)

@@ -154,6 +154,10 @@ func (o *recordQueryImplementation) ToSelectDataset(driver string, table string)
 	// 	q = q.Where(goqu.C(COLUMN_STATUS).In(o.GetStatusIn()))
 	// }
 
+	if o.IsOffsetSet() && !o.IsLimitSet() {
+		o.SetLimit(10) // offset always requires limit to be set
+	}
+
 	if !o.IsCountOnly() {
 		if o.IsLimitSet() {
 			q = q.Limit(uint(o.GetLimit()))

@@ -9,6 +9,9 @@ type StoreInterface interface {
 	// EnableDebug - enables the debug option
 	EnableDebug(debug bool)
 
+	// RecordCount returns the count of records based on a query
+	RecordCount(query RecordQueryInterface) (int64, error)
+
 	// RecordCreate creates a new record
 	RecordCreate(record RecordInterface) error
 

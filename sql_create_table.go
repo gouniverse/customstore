@@ -16,7 +16,6 @@ func (store *storeImplementation) SqlCreateTable() string {
 			Name:   COLUMN_RECORD_TYPE,
 			Type:   sb.COLUMN_TYPE_STRING,
 			Length: 100,
-			Unique: true,
 		}).
 		Column(sb.Column{
 			Name: COLUMN_PAYLOAD,
