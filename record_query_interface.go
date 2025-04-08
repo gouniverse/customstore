@@ -42,6 +42,10 @@ type RecordQueryInterface interface {
 	IsOrderBySet() bool
 	GetOrderBy() string
 	SetOrderBy(orderBy string) RecordQueryInterface
+
+	// Payload search methods
+	AddPayloadSearch(needle string) RecordQueryInterface
+	GetPayloadSearch() []string
 }
 
 // RecordQuery shortcut for NewRecordQuery
@@ -58,6 +62,7 @@ func NewRecordQuery() RecordQueryInterface {
 		isLimitSet:            false,
 		isOffsetSet:           false,
 		isOrderBySet:          false,
+		payloadSearch:         nil,
 	}
 }
 
@@ -98,6 +103,9 @@ type recordQueryImplementation struct {
 
 	// orderBy is the order by of the API record
 	orderBy string
+
+	// payloadSearch is the search conditions for payload fields
+	payloadSearch []string
 }
 
 func (o *recordQueryImplementation) Validate() error {
@@ -153,6 +161,13 @@ func (o *recordQueryImplementation) ToSelectDataset(driver string, table string)
 	// if o.IsStatusInSet() {
 	// 	q = q.Where(goqu.C(COLUMN_STATUS).In(o.GetStatusIn()))
 	// }
+
+	// Add payload search conditions
+	if len(o.payloadSearch) > 0 {
+		for _, value := range o.payloadSearch {
+			q = q.Where(goqu.I("payload").Like("%" + value + "%"))
+		}
+	}
 
 	if o.IsOffsetSet() && !o.IsLimitSet() {
 		o.SetLimit(10) // offset always requires limit to be set
@@ -302,4 +317,16 @@ func (o *recordQueryImplementation) SetType(recordType string) RecordQueryInterf
 	o.isTypeSet = true
 	o.recordType = recordType
 	return o
+}
+
+func (o *recordQueryImplementation) AddPayloadSearch(needle string) RecordQueryInterface {
+	if o.payloadSearch == nil {
+		o.payloadSearch = []string{}
+	}
+	o.payloadSearch = append(o.payloadSearch, needle)
+	return o
+}
+
+func (o *recordQueryImplementation) GetPayloadSearch() []string {
+	return o.payloadSearch
 }

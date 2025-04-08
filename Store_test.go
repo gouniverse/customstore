@@ -679,3 +679,130 @@ func TestRecordSoftDeleteWithEmptyID(t *testing.T) {
 		t.Fatal("Error should be 'record id is empty' but got:", err.Error())
 	}
 }
+
+func TestRecordQueryPayloadSearch(t *testing.T) {
+	db := InitDB("test_data_store_record_query_payload_search.db")
+
+	store, err := NewStore(NewStoreOptions{
+		DB:                 db,
+		TableName:          "data_record_query_payload_search",
+		AutomigrateEnabled: true,
+	})
+
+	if err != nil {
+		t.Fatalf("Store could not be created: " + err.Error())
+	}
+
+	if store == nil {
+		t.Fatalf("Store could not be created")
+	}
+
+	record1 := NewRecord("person")
+	record1.SetPayloadMap(map[string]any{
+		"name":    "Jon Doe",
+		"country": "US",
+	})
+	err = store.RecordCreate(record1)
+
+	if err != nil {
+		t.Fatalf("Record could not be created: " + err.Error())
+	}
+
+	record2 := NewRecord("person")
+	record2.SetPayloadMap(map[string]any{
+		"name":    "Jane Smith",
+		"country": "GB",
+	})
+	err = store.RecordCreate(record2)
+
+	if err != nil {
+		t.Fatalf("Record could not be created: " + err.Error())
+	}
+
+	record3 := NewRecord("company")
+	record3.SetPayloadMap(map[string]any{
+		"name":    "Acme Corp",
+		"country": "US",
+	})
+	err = store.RecordCreate(record3)
+
+	if err != nil {
+		t.Fatalf("Record could not be created: " + err.Error())
+	}
+
+	// Test with payload search
+	query := RecordQuery().AddPayloadSearch("Jon")
+	list, err := store.RecordList(query)
+
+	if err != nil {
+		t.Fatalf("Record could not be listed: " + err.Error())
+	}
+
+	if len(list) != 1 {
+		t.Fatalf("Record list must be 1")
+	}
+
+	if list[0].Payload() != `{"country":"US","name":"Jon Doe"}` {
+		t.Fatalf("Record payload must be {\"country\":\"US\",\"name\":\"Jon Doe\"} but found %s", list[0].Payload())
+	}
+
+	// Test with payload search
+	query = RecordQuery().AddPayloadSearch("US")
+	list, err = store.RecordList(query)
+
+	if err != nil {
+		t.Fatalf("Record could not be listed: " + err.Error())
+	}
+
+	if len(list) != 2 {
+		t.Fatalf("Record list must be 2")
+	}
+
+	// Test with payload search
+	query = RecordQuery().AddPayloadSearch("Jane")
+	list, err = store.RecordList(query)
+
+	if err != nil {
+		t.Fatalf("Record could not be listed: " + err.Error())
+	}
+
+	if len(list) != 1 {
+		t.Fatalf("Record list must be 1")
+	}
+
+	if list[0].Payload() != `{"country":"GB","name":"Jane Smith"}` {
+		t.Fatalf("Record payload must be {\"country\":\"GB\",\"name\":\"Jane Smith\"} but found %s", list[0].Payload())
+	}
+
+	// Test with payload search
+	query = RecordQuery().AddPayloadSearch("Acme")
+	list, err = store.RecordList(query)
+
+	if err != nil {
+		t.Fatalf("Record could not be listed: " + err.Error())
+	}
+
+	if len(list) != 1 {
+		t.Fatalf("Record list must be 1")
+	}
+
+	if list[0].Payload() != `{"country":"US","name":"Acme Corp"}` {
+		t.Fatalf("Record payload must be {\"country\":\"US\",\"name\":\"Acme Corp\"} but found %s", list[0].Payload())
+	}
+
+	// Test with payload search
+	query = RecordQuery().AddPayloadSearch("Corp")
+	list, err = store.RecordList(query)
+
+	if err != nil {
+		t.Fatalf("Record could not be listed: " + err.Error())
+	}
+
+	if len(list) != 1 {
+		t.Fatalf("Record list must be 1")
+	}
+
+	if list[0].Payload() != `{"country":"US","name":"Acme Corp"}` {
+		t.Fatalf("Record payload must be {\"country\":\"US\",\"name\":\"Acme Corp\"} but found %s", list[0].Payload())
+	}
+}
