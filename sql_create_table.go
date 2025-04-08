@@ -19,8 +19,16 @@ func (store *storeImplementation) SqlCreateTable() string {
 			Unique: true,
 		}).
 		Column(sb.Column{
-			Name: COLUMN_RECORD_DATA,
+			Name: COLUMN_PAYLOAD,
 			Type: sb.COLUMN_TYPE_LONGTEXT,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_METAS,
+			Type: sb.COLUMN_TYPE_TEXT,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_MEMO,
+			Type: sb.COLUMN_TYPE_TEXT,
 		}).
 		Column(sb.Column{
 			Name: COLUMN_CREATED_AT,
@@ -31,7 +39,7 @@ func (store *storeImplementation) SqlCreateTable() string {
 			Type: sb.COLUMN_TYPE_DATETIME,
 		}).
 		Column(sb.Column{
-			Name:     COLUMN_DELETED_AT,
+			Name:     COLUMN_SOFT_DELETED_AT,
 			Type:     sb.COLUMN_TYPE_DATETIME,
 			Nullable: true,
 		}).

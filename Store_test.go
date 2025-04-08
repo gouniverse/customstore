@@ -65,17 +65,15 @@ func TestRecordCreate(t *testing.T) {
 		t.Fatalf("Store could not be created")
 	}
 
-	record := Record{
-		Type: "person",
-	}
-	err = store.RecordCreate(&record)
+	record := NewRecord("person")
+	err = store.RecordCreate(record)
 
 	if err != nil {
 		t.Fatalf("Record could not be created: " + err.Error())
 	}
 
-	if len(record.ID) != 32 {
-		t.Fatalf("Record ID != 3 but %s", record.ID)
+	if len(record.ID()) != 32 {
+		t.Fatalf("Record ID != 32 but %s", record.ID())
 	}
 }
 
@@ -96,23 +94,21 @@ func TestRecordFindByID(t *testing.T) {
 		t.Fatalf("Store could not be created")
 	}
 
-	record := Record{
-		Type: "person",
-	}
-	record.SetMap(map[string]interface{}{
+	record := NewRecord("person")
+	record.SetPayloadMap(map[string]interface{}{
 		"name": "Jon",
 	})
-	err = store.RecordCreate(&record)
+	err = store.RecordCreate(record)
 
 	if err != nil {
 		t.Fatalf("Record could not be created: " + err.Error())
 	}
 
-	if len(record.ID) != 32 {
-		t.Fatalf("Record ID != 3 but %s", record.ID)
+	if len(record.ID()) != 32 {
+		t.Fatalf("Record ID != 3 but %s", record.ID())
 	}
 
-	retrievedRecord, errFind := store.RecordFindByID(record.ID)
+	retrievedRecord, errFind := store.RecordFindByID(record.ID())
 
 	if errFind != nil {
 		t.Fatalf("Record could not be found: " + errFind.Error())
@@ -121,8 +117,6 @@ func TestRecordFindByID(t *testing.T) {
 	if retrievedRecord == nil {
 		t.Fatalf("Record must not be NIL")
 	}
-
-	// log.Println(retrievedRecord.GetMap())
 }
 
 func TestRecordUpdate(t *testing.T) {
@@ -142,7 +136,8 @@ func TestRecordUpdate(t *testing.T) {
 		t.Fatalf("Store could not be created")
 	}
 
-	record := NewRecord(`person`).SetMap(map[string]any{
+	record := NewRecord(`person`)
+	record.SetPayloadMap(map[string]any{
 		`first_name`: `John`,
 		`last_name`:  `Doe`,
 	})
@@ -153,7 +148,7 @@ func TestRecordUpdate(t *testing.T) {
 		t.Fatalf("Record could not be created: " + err.Error())
 	}
 
-	retrievedRecord, errFind := store.RecordFindByID(record.ID)
+	retrievedRecord, errFind := store.RecordFindByID(record.ID())
 
 	if errFind != nil {
 		t.Fatalf("Record could not be found: " + errFind.Error())
@@ -163,11 +158,11 @@ func TestRecordUpdate(t *testing.T) {
 		t.Fatalf("Record must not be NIL")
 	}
 
-	if retrievedRecord.Data != `{"first_name":"John","last_name":"Doe"}` {
-		t.Fatal("Record data must be", record.Data, " found: ", retrievedRecord.Data)
+	if retrievedRecord.Payload() != `{"first_name":"John","last_name":"Doe"}` {
+		t.Fatal("Record data must be", record.Payload(), " found: ", retrievedRecord.Payload())
 	}
 
-	retrievedRecord.SetMap(map[string]any{
+	retrievedRecord.SetPayloadMap(map[string]any{
 		`first_name`: `Jane`,
 		`last_name`:  `Smith`,
 		`country`:    `GB`,
@@ -179,7 +174,7 @@ func TestRecordUpdate(t *testing.T) {
 		t.Fatalf("Record could not be updated: " + err.Error())
 	}
 
-	retrievedRecord2, errFind := store.RecordFindByID(record.ID)
+	retrievedRecord2, errFind := store.RecordFindByID(record.ID())
 
 	if errFind != nil {
 		t.Fatalf("Record could not be found: " + errFind.Error())
@@ -189,8 +184,8 @@ func TestRecordUpdate(t *testing.T) {
 		t.Fatalf("Record must not be NIL")
 	}
 
-	if retrievedRecord2.Data != `{"country":"GB","first_name":"Jane","last_name":"Smith"}` {
-		t.Fatal("Record data must be", retrievedRecord.Data, " found: ", retrievedRecord2.Data)
+	if retrievedRecord2.Payload() != `{"country":"GB","first_name":"Jane","last_name":"Smith"}` {
+		t.Fatal("Record data must be", retrievedRecord.Payload(), " found: ", retrievedRecord2.Payload())
 	}
 
 }
