@@ -5,10 +5,9 @@ import (
 
 	"github.com/dromara/carbon/v2"
 	"github.com/gouniverse/dataobject"
-	"github.com/gouniverse/maputils"
 	"github.com/gouniverse/sb"
 	"github.com/gouniverse/uid"
-	"github.com/gouniverse/utils"
+	"github.com/spf13/cast"
 )
 
 // ============================================================================
@@ -97,12 +96,13 @@ func (o *recordImplementation) Metas() (map[string]string, error) {
 		metasStr = "{}"
 	}
 
-	metasJson, errJson := utils.FromJSON(metasStr, map[string]string{})
-	if errJson != nil {
-		return map[string]string{}, errJson
+	var metas map[string]any
+	err := json.Unmarshal([]byte(metasStr), &metas)
+	if err != nil {
+		return map[string]string{}, err
 	}
 
-	return maputils.MapStringAnyToMapStringString(metasJson.(map[string]any)), nil
+	return cast.ToStringMapString(metas), nil
 }
 
 func (o *recordImplementation) Meta(name string) string {
@@ -126,11 +126,11 @@ func (o *recordImplementation) SetMeta(name, value string) error {
 // SetMetas stores metas as json string
 // Warning: it overwrites any existing metas
 func (o *recordImplementation) SetMetas(metas map[string]string) error {
-	mapString, err := utils.ToJSON(metas)
+	mapString, err := json.Marshal(metas)
 	if err != nil {
 		return err
 	}
-	o.Set(COLUMN_METAS, mapString)
+	o.Set(COLUMN_METAS, string(mapString))
 	return nil
 }
 
@@ -157,7 +157,7 @@ func (o *recordImplementation) SetPayload(payload string) {
 }
 
 func (r *recordImplementation) PayloadMap() (map[string]any, error) {
-	var data map[string]any
+	data := make(map[string]any)
 
 	if r.Payload() == "" {
 		return data, nil
@@ -180,6 +180,31 @@ func (record *recordImplementation) SetPayloadMap(metas map[string]any) error {
 	jsonString := string(jsonBytes)
 	record.SetPayload(jsonString)
 	return nil
+}
+
+func (record *recordImplementation) PayloadMapKey(key string) (any, error) {
+	data, err := record.PayloadMap()
+	if err != nil {
+		return nil, err
+	}
+
+	value, exists := data[key]
+	if !exists {
+		return nil, nil
+	}
+
+	return value, nil
+}
+
+func (record *recordImplementation) SetPayloadMapKey(key string, value any) error {
+	data, err := record.PayloadMap()
+	if err != nil {
+		return err
+	}
+
+	data[key] = value
+
+	return record.SetPayloadMap(data)
 }
 
 func (o *recordImplementation) SoftDeletedAt() string {

@@ -36,6 +36,8 @@ type RecordInterface interface {
 
 	PayloadMap() (map[string]any, error)
 	SetPayloadMap(payloadMap map[string]any) error
+	PayloadMapKey(key string) (any, error)
+	SetPayloadMapKey(key string, value any) error
 
 	SoftDeletedAt() string
 	SetSoftDeletedAt(softDeletedAt string)
