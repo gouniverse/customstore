@@ -40,6 +40,7 @@ type RecordInterface interface {
 	SetPayloadMapKey(key string, value any) error
 
 	SoftDeletedAt() string
+	SoftDeletedAtCarbon() *carbon.Carbon
 	SetSoftDeletedAt(softDeletedAt string)
 
 	UpdatedAt() string
