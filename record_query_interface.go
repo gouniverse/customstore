@@ -46,6 +46,8 @@ type RecordQueryInterface interface {
 	// Payload search methods
 	AddPayloadSearch(needle string) RecordQueryInterface
 	GetPayloadSearch() []string
+	AddPayloadSearchNot(needle string) RecordQueryInterface
+	GetPayloadSearchNot() []string
 }
 
 // RecordQuery shortcut for NewRecordQuery
@@ -63,6 +65,7 @@ func NewRecordQuery() RecordQueryInterface {
 		isOffsetSet:           false,
 		isOrderBySet:          false,
 		payloadSearch:         nil,
+		payloadSearchNot:      nil,
 	}
 }
 
@@ -104,8 +107,11 @@ type recordQueryImplementation struct {
 	// orderBy is the order by of the API record
 	orderBy string
 
-	// payloadSearch is the search conditions for payload fields
+	// payloadSearch is the list of strings to search for in the payload
 	payloadSearch []string
+
+	// payloadSearchNot is the list of strings that should NOT be in the payload
+	payloadSearchNot []string
 }
 
 func (o *recordQueryImplementation) Validate() error {
@@ -128,7 +134,7 @@ func (o *recordQueryImplementation) ToSelectDataset(driver string, table string)
 	q := goqu.Dialect(driver).From(table)
 
 	if o.IsSoftDeletedIncluded() {
-		return q, []any{}, nil
+		return q, []any{}, nil // soft deleted sites requested specifically
 	}
 
 	// if o.IsCreatedAtGteSet() && o.IsCreatedAtLteSet() {
@@ -163,10 +169,24 @@ func (o *recordQueryImplementation) ToSelectDataset(driver string, table string)
 	// }
 
 	// Add payload search conditions
+	conditions := []goqu.Expression{}
+
 	if len(o.payloadSearch) > 0 {
+		orConditions := []goqu.Expression{}
 		for _, value := range o.payloadSearch {
-			q = q.Where(goqu.I("payload").Like("%" + value + "%"))
+			orConditions = append(orConditions, goqu.I("payload").Like("%" + value + "%"))
 		}
+		conditions = append(conditions, goqu.Or(orConditions...))
+	}
+
+	if len(o.payloadSearchNot) > 0 {
+		for _, value := range o.payloadSearchNot {
+			conditions = append(conditions, goqu.I("payload").NotLike("%" + value + "%"))
+		}
+	}
+
+	if len(conditions) > 0 {
+		q = q.Where(goqu.And(conditions...))
 	}
 
 	if o.IsOffsetSet() && !o.IsLimitSet() {
@@ -329,4 +349,16 @@ func (o *recordQueryImplementation) AddPayloadSearch(needle string) RecordQueryI
 
 func (o *recordQueryImplementation) GetPayloadSearch() []string {
 	return o.payloadSearch
+}
+
+func (o *recordQueryImplementation) AddPayloadSearchNot(needle string) RecordQueryInterface {
+	if o.payloadSearchNot == nil {
+		o.payloadSearchNot = []string{}
+	}
+	o.payloadSearchNot = append(o.payloadSearchNot, needle)
+	return o
+}
+
+func (o *recordQueryImplementation) GetPayloadSearchNot() []string {
+	return o.payloadSearchNot
 }

@@ -759,9 +759,11 @@ func TestRecordQueryPayloadSearch(t *testing.T) {
 
 	// Create records
 	recordsData := []map[string]any{
-		{"type": "person", "payload": map[string]any{"name": "Jon Doe", "country": "US"}},
-		{"type": "person", "payload": map[string]any{"name": "Jane Smith", "country": "GB"}},
-		{"type": "company", "payload": map[string]any{"name": "Acme Corp", "country": "US"}},
+		{"type": "person", "payload": map[string]any{"name": "Jon Doe", "country": "US", "status": "approved"}},
+		{"type": "person", "payload": map[string]any{"name": "Jane Smith", "country": "GB", "status": "draft"}},
+		{"type": "person", "payload": map[string]any{"name": "Tom Brown", "country": "US", "status": "approved"}},
+		{"type": "company", "payload": map[string]any{"name": "Acme Corp", "country": "US", "status": "approved"}},
+		{"type": "company", "payload": map[string]any{"name": "Beta Inc", "country": "GB", "status": "draft"}},
 	}
 
 	for i, data := range recordsData {
@@ -783,12 +785,15 @@ func TestRecordQueryPayloadSearch(t *testing.T) {
 		expectedName  string // Optional: Check name of the first result if count is 1
 	}{
 		{"Jon", 1, "Jon Doe"},
-		{"US", 2, ""}, // Expect 2 results, don't check name
+		{`"country":"US"`, 3, ""}, // Expect 3 results with US country
 		{"Jane", 1, "Jane Smith"},
 		{"Acme", 1, "Acme Corp"},
 		{"Corp", 1, "Acme Corp"},
 		{"Smith", 1, "Jane Smith"},
 		{"NonExistent", 0, ""},
+		// Test multiple status search with OR condition
+		{`"status":"approved"`, 3, ""}, // Should find all approved records
+		{`"status":"draft"`, 2, ""},    // Should find both draft records
 	}
 
 	for _, tc := range testCases {
@@ -814,4 +819,73 @@ func TestRecordQueryPayloadSearch(t *testing.T) {
 			}
 		})
 	}
+
+	// Test multiple payload searches with OR condition
+	t.Run("Search_Multiple_Status", func(t *testing.T) {
+		query := customstore.RecordQuery().
+			AddPayloadSearch(`"status":"approved"`).
+			AddPayloadSearch(`"status":"draft"`)
+
+		list, err := store.RecordList(query)
+		if err != nil {
+			t.Fatalf("RecordList with multiple payload search failed: %v", err)
+		}
+
+		if len(list) != 5 {
+			t.Fatalf("Expected 5 records (all records with either approved or draft status), but got %d", len(list))
+		}
+
+		// Verify we got both approved and draft records
+		statusCounts := map[string]int{"approved": 0, "draft": 0}
+		for _, record := range list {
+			payloadMap, err := record.PayloadMap()
+			if err != nil {
+				t.Fatalf("PayloadMap failed: %v", err)
+			}
+			if status, ok := payloadMap["status"].(string); ok {
+				statusCounts[status]++
+			}
+		}
+
+		if statusCounts["approved"] != 3 {
+			t.Errorf("Expected 3 approved records, but got %d", statusCounts["approved"])
+		}
+		if statusCounts["draft"] != 2 {
+			t.Errorf("Expected 2 draft records, but got %d", statusCounts["draft"])
+		}
+	})
+
+	// Test NOT condition
+	t.Run("Search_With_Not", func(t *testing.T) {
+		query := customstore.RecordQuery().
+			AddPayloadSearch(`"status":"approved"`).
+			AddPayloadSearchNot(`"name":"Tom Brown"`)
+
+		list, err := store.RecordList(query)
+		if err != nil {
+			t.Fatalf("RecordList with NOT condition failed: %v", err)
+		}
+
+		if len(list) != 2 {
+			t.Fatalf("Expected 2 records (approved status but not Tom), but got %d", len(list))
+		}
+
+		// Verify we got the right records
+		for _, record := range list {
+			payloadMap, err := record.PayloadMap()
+			if err != nil {
+				t.Fatalf("PayloadMap failed: %v", err)
+			}
+
+			// Should be approved
+			if status, ok := payloadMap["status"].(string); !ok || status != "approved" {
+				t.Errorf("Expected status 'approved', but got %q", status)
+			}
+
+			// Should not be Tom
+			if name, ok := payloadMap["name"].(string); ok && name == "Tom Brown" {
+				t.Errorf("Found record with name 'Tom Brown' which should have been excluded")
+			}
+		}
+	})
 }
